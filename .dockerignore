@@ -1,0 +1,10 @@
+.git
+.gradle
+.gradle-user-home
+build
+bin
+.vscode
+
+# Never send env files in Docker build context
+.env
+.env.*
