@@ -1,4 +1,4 @@
-package Kevin.Peyton.Game.Platform.Demo;
+package Kevin.Peyton.Game.Platform.Demo.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +37,7 @@ import Kevin.Peyton.Game.Platform.Demo.GamePlatformDemoApplication;
         "spring.jpa.hibernate.ddl-auto=none"
     })
 @Testcontainers
-class GamePlatformDemoApplicationTests {
+class GamesControllerIT {
 
 	
 
@@ -65,12 +65,12 @@ class GamePlatformDemoApplicationTests {
 	private Integer testDeveloperId;
 
 	/**
-	 * Constructor for GamePlatformDemoApplicationTests.
+	 * Constructor for GamesControllerIT.
 	 * This constructor is annotated with @Autowired, which means that Spring will automatically inject the DeveloperRepository bean when creating an instance of this test class. 
 	 * The DeveloperRepository is used to interact with the database for developer-related operations during the tests. By using constructor injection, we can ensure that the DeveloperRepository is properly initialized and available for use in the test methods.
 	 */
 	@Autowired
-	public GamePlatformDemoApplicationTests(
+	public GamesControllerIT(
 			DeveloperRepository developerRepository) {
 		this.developerRepository = developerRepository;
 	}
@@ -155,3 +155,4 @@ class GamePlatformDemoApplicationTests {
 	
 
 }
+

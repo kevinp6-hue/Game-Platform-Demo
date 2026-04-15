@@ -57,7 +57,7 @@ public class GamesService {
 
     @Transactional
     public Game getGameByDeveloperName(String developerName) {
-        var developer = developerRepository.findByName(developerName)
+        var developer = developerRepository.findByDevName(developerName)
                 .orElseThrow(() -> new EntityNotFoundException("Developer not found: " + developerName));
         return gameRepository.findByDeveloperId(developer.getId()).stream().findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("No games found for developer: " + developerName));
