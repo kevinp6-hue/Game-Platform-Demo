@@ -1,6 +1,6 @@
 package Kevin.Peyton.Game.Platform.Demo.dto.errors;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * A record representing an API error response.
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * @value message A detailed message about the error.
  * @value path The URI path that caused the error.
  */
-public record ApiErrorResponse(LocalDateTime timestamp, 
+public record ApiErrorResponse(OffsetDateTime timestamp, 
     int status, 
     String error, 
     String message, 

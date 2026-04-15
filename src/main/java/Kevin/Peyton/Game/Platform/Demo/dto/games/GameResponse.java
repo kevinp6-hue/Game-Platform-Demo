@@ -21,4 +21,6 @@ public record GameResponse(
 				game.getCurrentPrice(),
 				developer == null ? null : developer.getId());
 	}
+
+	
 }

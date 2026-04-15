@@ -50,6 +50,20 @@ public class GamesService {
         return gameRepository.findByDeveloperId(developerId);
     }
 
+    @Transactional(readOnly = true)
+    public Game getGameByName(String name) {
+        return gameRepository.findByTitle(name).orElseThrow(() -> new EntityNotFoundException("Game not found: " + name));
+    }
+
+    @Transactional
+    public Game getGameByDeveloperName(String developerName) {
+        var developer = developerRepository.findByName(developerName)
+                .orElseThrow(() -> new EntityNotFoundException("Developer not found: " + developerName));
+        return gameRepository.findByDeveloperId(developer.getId()).stream().findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("No games found for developer: " + developerName));
+    }
+
+
     @Transactional
     public Game createGame(Game game) {
         return gameRepository.save(game);

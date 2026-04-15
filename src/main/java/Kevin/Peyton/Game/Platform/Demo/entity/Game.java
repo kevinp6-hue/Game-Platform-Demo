@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
 
 @Entity
 @Table(name = "games")
@@ -29,7 +30,7 @@ public class Game {
     @Column(name = "current_price", precision = 10, scale = 2)
     private BigDecimal currentPrice;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "developer_id")
     private Developer developer;
 

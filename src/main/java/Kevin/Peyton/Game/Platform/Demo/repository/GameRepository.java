@@ -11,5 +11,8 @@ import Kevin.Peyton.Game.Platform.Demo.entity.Game;
 public interface GameRepository extends JpaRepository<Game, Integer> { 
     @Query("select g from Game g where g.developer.id = :developerId")
     List<Game> findByDeveloperId(@Param("developerId") Integer developerId);
+
+    @Query("select g from Game g where g.title = :title")
+    java.util.Optional<Game> findByTitle(@Param("title") String title);
 }
 

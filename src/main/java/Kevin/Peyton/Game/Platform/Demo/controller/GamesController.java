@@ -48,6 +48,39 @@ public class GamesController {
     }
 
     /**
+     * Endpoint to retrieve a game by its name.
+     * @param name The name of the game to retrieve.
+     * @return The game with the specified name.
+     */
+    @GetMapping("/name/{name}")
+    public GameResponse getByName(@PathVariable String name) {
+        return GameResponse.fromEntity(gamesService.getGameByName(name));
+    }
+
+    /**
+     * Endpoint to retrieve games by developer ID.
+     * @param developerId The ID of the developer whose games to retrieve.
+     * @return A list of games by the specified developer.
+     */
+    @GetMapping("/?developerId={developerId}")
+    public List<GameResponse> getByDeveloperId(@PathVariable Integer developerId) {
+        var games = gamesService.getGamesByDeveloperId(developerId);
+        return games.stream().map(GameResponse::fromEntity).toList();
+    }
+
+    /**
+     * Endpoint to retrieve a game by developer name.
+     * @param developerName The name of the developer whose game to retrieve.
+     * @return The game by the specified developer.
+     */
+
+    @GetMapping("/?developerName={developerName}")
+    public GameResponse getByDeveloperName(@PathVariable String developerName) {
+        return GameResponse.fromEntity(gamesService.getGameByDeveloperName(developerName));
+    }
+    //////// POST ENDPOINTS
+
+    /**
      * Endpoint to create a new game.
      * @param request The request containing the game details.
      * @return The created game.
@@ -59,12 +92,15 @@ public class GamesController {
 
     /**
      * Endpoint to add multiple genres to a game.
-     * @param id The ID of the game to which to add genres.
+     * @param id The ID of the game to which to add genres. Id must be positive integer.
      * @param genreIds A list of genre IDs to add.
      * @return The updated game with the added genres.
      */
     @PostMapping("/{id}/genres")
     public GameResponse addGenres(@Valid @PathVariable Integer id, @RequestBody List<Integer> genreIds) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Game ID must be a positive integer.");
+        }
         for (Integer genreId : genreIds) {
             gamesService.addGenreToGame(id, genreId);
         }
@@ -78,8 +114,14 @@ public class GamesController {
      * @return The updated game with the added genre.
      */
     @PostMapping("/{id}/genre")
-    public GameResponse addGenre(@Valid @PathVariable Integer id, @RequestBody List<Integer> genreId) {
-        gamesService.addGenreToGame(id, genreId.get(0));
+    public GameResponse addGenre(@Valid @PathVariable Integer id, @RequestBody Integer genreId) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Game ID must be a positive integer.");
+        }
+        if (genreId <= 0) {
+            throw new IllegalArgumentException("Genre ID must be a positive integer.");
+        }
+        gamesService.addGenreToGame(id, genreId);
         return GameResponse.fromEntity(gamesService.getGameById(id));
     }
     
