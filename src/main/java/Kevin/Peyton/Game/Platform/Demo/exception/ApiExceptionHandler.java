@@ -96,6 +96,24 @@ public class ApiExceptionHandler {
     }
 
     /**
+     * Handles ConflictException and returns a structured API error response with a 409 status code.
+     * @param ex The exception indicating a request conflict.
+     * @param request The HTTP request that caused the exception.
+     * @return A ResponseEntity containing the API error response with a 409 status code.
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request) {
+        var errorResponse = new ApiErrorResponse(
+            OffsetDateTime.now(),
+            409,
+            "Conflict",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(409).body(errorResponse);
+    }
+
+    /**
      * Handles any uncaught exceptions and returns a structured API error response with a 500 status code.
      * @param ex The exception that was thrown.
      * @param request The HTTP request that caused the exception.
@@ -108,7 +126,7 @@ public class ApiExceptionHandler {
             OffsetDateTime.now(),
             500,
             "Internal Server Error",
-            "Unexpected error occurred: ",
+            "Unexpected error occurred",
             request.getRequestURI()
         );
         return ResponseEntity.status(500).body(errorResponse);

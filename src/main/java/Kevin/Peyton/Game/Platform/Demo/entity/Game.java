@@ -74,4 +74,8 @@ public class Game {
         this.developer = developer;
     }
 
+    public void setCurrentPrice(double d) {
+        this.currentPrice = BigDecimal.valueOf(d);
+    }
+
 }
