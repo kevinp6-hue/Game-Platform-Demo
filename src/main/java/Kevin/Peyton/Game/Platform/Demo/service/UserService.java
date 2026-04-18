@@ -23,55 +23,62 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, UserRoleRepository userRoleRepository) {
+    public UserService(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
     }
 
     @Transactional(readOnly = true)
-    public User findById( Integer id) {
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserByIdWithEmailsAndAddresses(Integer id) {
         return userRepository.findWithEmailsAndAddressesById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
     }
 
     @Transactional(readOnly = true)
-    public User findByIdWithEmails( Integer id) {
+    public User getUserByIdWithEmails(Integer id) {
         return userRepository.findWithEmailsById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
     }
 
     @Transactional(readOnly = true)
-    public User findByIdWithoutRelations( Integer id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    public User getUserById(Integer id) {
+        return requireUser(id);
     }
 
     @Transactional(readOnly = true)
-    public User findByEmail( String email) {
+    public User getUserByEmail(String email) {
         return userRepository.findWithEmailsByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
     }
 
     @Transactional(readOnly = true)
-    public User findByUsername( String username) {
+    public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
     }
 
     @Transactional(readOnly = true)
-    public boolean existsById( Integer id) {
+    public boolean existsById(Integer id) {
         return userRepository.existsById(id);
     }
 
     @Transactional(readOnly = true)
-    public boolean existsByUsername( String username) {
+    public boolean existsByUsername(String username) {
         return userRepository.findByUsername(username).isPresent();
     }
 
     @Transactional(readOnly = true)
-    public List<User> findByRole( String roleName) {
-        Role role = roleRepository.findByName(roleName)
+    public List<User> getUsersByRoleName(String roleName) {
+        var role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new EntityNotFoundException("Role not found with name: " + roleName));
         return userRoleRepository.findByRole_Id(role.getId())
                 .stream()
@@ -80,12 +87,12 @@ public class UserService {
     }
 
     @Transactional
-    public User saveUser( User user) {
+    public User createUser(User user) {
         return userRepository.save(user);
     }
 
     @Transactional
-    public void deleteUser( Integer id) {
+    public void deleteUser(Integer id) {
         if (!userRepository.existsById(id)) {
             throw new EntityNotFoundException("User not found with id: " + id);
         }
@@ -93,16 +100,13 @@ public class UserService {
     }
 
     @Transactional
-    public UserRole assignRoleToUser( Integer userId, Integer roleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        var role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleId));
+    public UserRole assignRoleToUser(Integer userId, Integer roleId) {
+        var user = requireUser(userId);
+        var role = requireRole(roleId);
 
         if (userRoleRepository.existsByUser_IdAndRole_Id(user.getId(), role.getId())) {
             throw new ConflictException("User already has the specified role assigned");
         }
-
 
         UserRole userRole = new UserRole();
         userRole.setId(new UserRoleId(user.getId(), role.getId()));
@@ -112,11 +116,9 @@ public class UserService {
     }
 
     @Transactional
-    public void removeRoleFromUser( Integer userId, Integer roleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        var role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleId));
+    public void removeRoleFromUser(Integer userId, Integer roleId) {
+        var user = requireUser(userId);
+        var role = requireRole(roleId);
 
         UserRole userRole = userRoleRepository.findByUser_IdAndRole_Id(user.getId(), role.getId());
         if (userRole == null) {
@@ -126,9 +128,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<Role> getUserRoles( Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+    public List<Role> getUserRoles(Integer userId) {
+        var user = requireUser(userId);
         return userRoleRepository.findByUser_Id(user.getId())
                 .stream()
                 .map(UserRole::getRole)
@@ -136,9 +137,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<User> getUsersByRole( Integer roleId) {
-        var role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleId));
+    public List<User> getUsersByRoleId(Integer roleId) {
+        var role = requireRole(roleId);
         return userRoleRepository.findByRole_Id(role.getId())
                 .stream()
                 .map(UserRole::getUser)
@@ -146,37 +146,30 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public boolean userHasRole( Integer userId, Integer roleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        var role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleId));
+    public boolean userHasRole(Integer userId, Integer roleId) {
+        var user = requireUser(userId);
+        var role = requireRole(roleId);
 
         return userRoleRepository.existsByUser_IdAndRole_Id(user.getId(), role.getId());
     }
 
     @Transactional(readOnly = true)
-    public List<User> findAllUsers() {
-        return userRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Role> findAllRoles() {
+    public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public List<UserRole> findAllUserRoles() {
+    public List<UserRole> getAllUserRoles() {
         return userRoleRepository.findAll();
     }
 
     @Transactional
-    public Role saveRole( Role role) {
+    public Role saveRole(Role role) {
         return roleRepository.save(role);
     }
 
     @Transactional
-    public void deleteRole( Integer roleId) {
+    public void deleteRole(Integer roleId) {
         if (!roleRepository.existsById(roleId)) {
             throw new EntityNotFoundException("Role not found with id: " + roleId);
         }
@@ -184,7 +177,7 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUser( Integer userId, User updatedUser) {
+    public User updateUser(Integer userId, User updatedUser) {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
@@ -199,6 +192,13 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
+    private User requireUser(Integer id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    }
 
-
+    private Role requireRole(Integer id) {
+        return roleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + id));
+    }
 }
