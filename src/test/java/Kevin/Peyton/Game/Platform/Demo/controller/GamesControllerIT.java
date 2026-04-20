@@ -1,6 +1,7 @@
 package Kevin.Peyton.Game.Platform.Demo.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -85,17 +87,13 @@ class GamesControllerIT extends IntegrationTestBase {
 	void testCreateGame() {
 		GameCreateRequest newGame = TestDataFactory.gameCreateRequest(testDeveloperId);
 
-		ResponseEntity<GameResponse> response = restClient.post()
+		// Creating/changing games requires authentication; anonymous requests should be rejected.
+		assertThatThrownBy(() -> restClient.post()
 				.uri("/API/games")
 				.body(newGame)
 				.retrieve()
-				.toEntity(GameResponse.class);
-
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-		assertThat(response.getHeaders().getLocation()).isNotNull();
-		assertThat(response.getBody()).isNotNull();
-		assertThat(response.getBody().title()).isEqualTo("Test Game");
-		assertThat(response.getBody().developerId()).isEqualTo(testDeveloperId);
+				.toEntity(GameResponse.class))
+				.isInstanceOf(HttpClientErrorException.Unauthorized.class);
 	}
 	
 

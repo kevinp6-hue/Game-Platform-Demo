@@ -1,7 +1,9 @@
 package Kevin.Peyton.Game.Platform.Demo.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +24,18 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository) {
+            UserRoleRepository userRoleRepository,
+            PasswordEncoder passwordEncoder
+        ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +95,33 @@ public class UserService {
     @Transactional
     public User createUser(User user) {
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public User registerUser(String username, String rawPassword, LocalDate birthDate) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new ConflictException("Username already exists");
+        }
+        User newUser = new User();
+        var encodedPassword = passwordEncoder.encode(rawPassword);
+        newUser.setUsername(username);
+        newUser.setPasswordHash(encodedPassword);
+        newUser.setBirthDate(birthDate);
+
+        var createdUser = userRepository.save(newUser);
+
+        // Assign the default "player" role to the new user
+        var defaultRole = roleRepository.findByName("player")
+                .orElseThrow(() -> new EntityNotFoundException("Default role 'player' not found"));
+        
+        UserRole userRole = new UserRole();
+        userRole.setId(new UserRoleId(createdUser.getId(), defaultRole.getId()));
+        userRole.setUser(createdUser);
+        userRole.setRole(defaultRole);
+        userRoleRepository.save(userRole);
+
+
+        return createdUser;
     }
 
     @Transactional

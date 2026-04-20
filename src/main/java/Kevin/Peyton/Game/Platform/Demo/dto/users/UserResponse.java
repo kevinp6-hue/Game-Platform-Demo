@@ -15,13 +15,9 @@ public record UserResponse(
     Integer id,
     String username,
     LocalDate birthDate,
-    String passwordHash,
     OffsetDateTime dateJoined,
     Boolean isActive,
-    OffsetDateTime lastLogin,
-    List<Address> addresses,
-    List<UserEmail> emails,
-    List<UserRole> userRoles
+    OffsetDateTime lastLogin
 
 ) {
     public static UserResponse fromEntity(User user) {
@@ -29,13 +25,9 @@ public record UserResponse(
             user.getId(),
             user.getUsername(),
             user.getBirthDate(),
-            user.getPasswordHash(),
             user.getDateJoined(),
             user.getIsActive(),
-            user.getLastLogin(),
-            user.getAddresses(),
-            user.getEmails(),
-            user.getUserRoles()
+            user.getLastLogin()
 
         );
     }

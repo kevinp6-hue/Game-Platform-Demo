@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import Kevin.Peyton.Game.Platform.Demo.service.UserService;
-import Kevin.Peyton.Game.Platform.Demo.entity.User;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import Kevin.Peyton.Game.Platform.Demo.dto.users.UserCreateRequest;
@@ -109,19 +108,9 @@ public class UserController {
      */
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request){
-        var password = request.password();
-        User newUser = new User();
-        newUser.setAddresses(request.addresses());
-        newUser.setBirthDate(request.birthDate());
-        newUser.setDateJoined(request.dateJoined());
-        newUser.setEmails(request.emails());
-        newUser.setIsActive(request.isActive());
-        newUser.setLastLogin(request.lastLogin());
-        newUser.setPasswordHash(password);
-        newUser.setUserRoles(request.userRoles());
-        newUser.setUsername(request.username());
-        var created = userService.createUser(newUser);
-        var body = UserResponse.fromEntity(newUser);
+        
+        var created = userService.registerUser(request.username(), request.password(), request.birthDate());
+        var body = UserResponse.fromEntity(created);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
