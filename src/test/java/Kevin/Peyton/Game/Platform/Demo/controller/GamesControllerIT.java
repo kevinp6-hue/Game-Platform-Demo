@@ -24,7 +24,7 @@ import Kevin.Peyton.Game.Platform.Demo.support.TestDataFactory;
 
 @ActiveProfiles("test")
 @SpringBootTest(classes = GamePlatformDemoApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class GamesControllerIT extends IntegrationTestBase {
 
 	private final DeveloperRepository developerRepository;

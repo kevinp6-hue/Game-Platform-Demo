@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -111,6 +112,25 @@ public class ApiExceptionHandler {
             request.getRequestURI()
         );
         return ResponseEntity.status(409).body(errorResponse);
+    }
+
+
+    /**
+     * Handles BadCredentialsException and returns a structured API error response with a 401 status code.
+     * @param ex The exception indicating bad credentials.
+     * @param request The HTTP request that caused the exception.
+     * @return A ResponseEntity containing the API error response with a 401 status code.
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(BadCredentialsException ex, HttpServletRequest request) {
+        var errorResponse = new ApiErrorResponse(
+            OffsetDateTime.now(),
+            401,
+            "Unauthorized",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(401).body(errorResponse);
     }
 
     /**

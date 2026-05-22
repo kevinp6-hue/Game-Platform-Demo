@@ -10,7 +10,7 @@ import Kevin.Peyton.Game.Platform.Demo.support.IntegrationTestBase;
 
 @ActiveProfiles("test")
 @SpringBootTest(classes = GamePlatformDemoApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class ContextLoadsIT extends IntegrationTestBase {
 	/**

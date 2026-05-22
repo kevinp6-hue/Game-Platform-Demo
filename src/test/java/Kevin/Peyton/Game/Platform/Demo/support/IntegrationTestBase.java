@@ -18,7 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Keep controller/service/repository tests in their own packages and extend this
  * class only for true end-to-end integration tests.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class IntegrationTestBase {
 
 	@Container
@@ -54,4 +54,3 @@ public abstract class IntegrationTestBase {
 		flyway.migrate();
 	}
 }
-

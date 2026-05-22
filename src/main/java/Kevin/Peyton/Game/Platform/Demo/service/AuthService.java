@@ -20,6 +20,7 @@ import Kevin.Peyton.Game.Platform.Demo.repository.RefreshTokenRepository;
 import Kevin.Peyton.Game.Platform.Demo.repository.UserRepository;
 import Kevin.Peyton.Game.Platform.Demo.repository.UserRoleRepository;
 import jakarta.transaction.Transactional;
+import Kevin.Peyton.Game.Platform.Demo.dto.auth.LoginResult;
 
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -53,8 +54,7 @@ public class AuthService {
 
     }
 
-    public record LoginResult(AuthResponse response, String refreshToken) {
-    }
+    
 
     @Transactional
     public LoginResult login(String username, String rawPassword) {
@@ -101,7 +101,83 @@ public class AuthService {
         return new LoginResult(
                 new AuthResponse(accessToken, "Bearer", accessTtlSeconds),
                 rawRefreshToken);
-}
+    }
+
+    @Transactional
+    public void logout(String refreshTokenRaw) {
+        if (refreshTokenRaw == null || refreshTokenRaw.isBlank()) {
+            return;
+        }
+
+        String hash = hashRefreshToken(refreshTokenRaw);
+
+        var tokenEntityOpt = refreshTokenRepository.findByTokenHash(hash);
+        tokenEntityOpt.ifPresent(tokenEntity -> {
+            tokenEntity.setRevokedAt(OffsetDateTime.now());
+            refreshTokenRepository.save(tokenEntity);
+        });
+    }
+
+
+    @Transactional
+    public LoginResult refresh(String refreshTokenRaw) {
+        if (refreshTokenRaw == null || refreshTokenRaw.isBlank()) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+
+        var now = OffsetDateTime.now();
+
+        // 1. Hash incoming raw token and find matching row (Throw 401-style exception if missing/invalid)
+        String hash = hashRefreshToken(refreshTokenRaw);
+
+        var tokenEntity = refreshTokenRepository.findByTokenHash(hash)
+                .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
+
+        // 2. Validate status
+        if (tokenEntity.getRevokedAt() != null) {
+            throw new BadCredentialsException("Refresh token revoked");
+        }
+        if (!tokenEntity.getExpiresAt().isAfter(now)) {
+            throw new BadCredentialsException("Refresh token expired");
+        }
+
+        var user = tokenEntity.getUser();
+
+        // 3. Rotate refresh token (revoke old, create new, link old -> new)
+        tokenEntity.setRevokedAt(now);
+
+        var newRefreshTokenRaw = generateRefreshToken();
+        var newRefreshTokenHash = hashRefreshToken(newRefreshTokenRaw);
+
+        RefreshToken newTokenEntity = new RefreshToken();
+        newTokenEntity.setUser(user);
+        newTokenEntity.setTokenHash(newRefreshTokenHash);
+        newTokenEntity.setExpiresAt(now.plusDays(refreshTtlDays));
+        refreshTokenRepository.save(newTokenEntity);
+
+        tokenEntity.setReplacedBy(newTokenEntity);
+        refreshTokenRepository.save(tokenEntity);
+
+        // 4. Mint new access JWT
+        List<String> roles = userRoleRepository.findByUser_Id(user.getId()).stream()
+                .map(ur -> ur.getRole().getName())
+                .toList();
+
+        var claims = JwtClaimsSet.builder()
+                .issuer("game-platform-demo")
+                .issuedAt(now.toInstant())
+                .expiresAt(now.plusSeconds(accessTtlSeconds).toInstant())
+                .subject(user.getUsername())
+                .claim("roles", roles)
+                .build();
+
+        var header = JwsHeader.with(MacAlgorithm.HS256).build();
+        String accessToken = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+
+        return new LoginResult(
+                new AuthResponse(accessToken, "Bearer", accessTtlSeconds),
+                newRefreshTokenRaw);
+    }
 
     private String generateRefreshToken(){
         SecureRandom secureRandom = new SecureRandom();
@@ -119,4 +195,5 @@ public class AuthService {
             throw new IllegalStateException("Unable to hash refresh token", ex);
         }
     }
+
 }
