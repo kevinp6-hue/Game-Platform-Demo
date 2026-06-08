@@ -51,7 +51,7 @@ public class SecurityConfig {
     @Bean
      public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-            // Stateless API (HTTP Basic for now)
+            // Stateless API - JWT bearer tokens
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -70,7 +70,7 @@ public class SecurityConfig {
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults())
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             .build();
      }
 
