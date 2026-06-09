@@ -8,6 +8,16 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +31,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import Kevin.Peyton.Game.Platform.Demo.dto.games.GameCreateRequest;
-import Kevin.Peyton.Game.Platform.Demo.service.GamesService;
 import Kevin.Peyton.Game.Platform.Demo.dto.games.GameResponse;
-import Kevin.Peyton.Game.Platform.Demo.entity.Game;
+import Kevin.Peyton.Game.Platform.Demo.dto.errors.ApiErrorResponse;
+import Kevin.Peyton.Game.Platform.Demo.service.GamesService;
 
 
+@Tag(name = "Games", description = "Browse the game catalog and manage game metadata")
 @Validated
 @RestController
 @RequestMapping("/API/games")
@@ -37,65 +48,71 @@ public class GamesController {
         this.gamesService = gamesService;
     }
 
-    /**
-     * Endpoint to retrieve a list of all games.
-     * @return A list of all games.
-     */
-	@GetMapping
+    @Operation(summary = "List all games")
+    @ApiResponse(responseCode = "200", description = "OK",
+        content = @Content(array = @ArraySchema(schema = @Schema(implementation = GameResponse.class))))
+    @GetMapping
     public List<GameResponse> list() {
         var games = gamesService.getAllGames();
         return games.stream().map(GameResponse::fromEntity).toList();
     }
-    
-    /**
-     * Endpoint to retrieve a game by its ID.
-     * @param id The ID of the game to retrieve.
-     * @return The game with the specified ID.
-     */
-    @GetMapping("/{id}")
-    public GameResponse getById(@PathVariable @Positive Integer id) {
 
+    @Operation(summary = "Get game by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = GameResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Game not found",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}")
+    public GameResponse getById(@Parameter(description = "Game ID") @PathVariable @Positive Integer id) {
         return GameResponse.fromEntity(gamesService.getGameById(id));
     }
 
-    /**
-     * Endpoint to retrieve a game by its name.
-     * @param name The name of the game to retrieve.
-     * @return The game with the specified name.
-     */
+    @Operation(summary = "Get game by title")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = GameResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Game not found",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/name/{name}")
-    public GameResponse getByName(@PathVariable String name) {
+    public GameResponse getByName(@Parameter(description = "Game title") @PathVariable String name) {
         return GameResponse.fromEntity(gamesService.getGameByName(name));
     }
 
-    /**
-     * Endpoint to retrieve games by developer ID.
-     * @param developerId The ID of the developer whose games to retrieve.
-     * @return A list of games by the specified developer.
-     */
+    @Operation(summary = "List games by developer ID")
+    @ApiResponse(responseCode = "200", description = "OK",
+        content = @Content(array = @ArraySchema(schema = @Schema(implementation = GameResponse.class))))
     @GetMapping("/?developerId={developerId}")
-    public List<GameResponse> getByDeveloperId(@RequestParam @Positive Integer developerId) {
+    public List<GameResponse> getByDeveloperId(
+            @Parameter(description = "Developer ID") @RequestParam @Positive Integer developerId) {
         var games = gamesService.getGamesByDeveloperId(developerId);
         return games.stream().map(GameResponse::fromEntity).toList();
     }
 
-    /**
-     * Endpoint to retrieve a game by developer name.
-     * @param developerName The name of the developer whose game to retrieve.
-     * @return The game by the specified developer.
-     */
-
+    @Operation(summary = "Get game by developer name")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = GameResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Developer not found",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/?developerName={developerName}")
-    public GameResponse getByDeveloperName(@RequestParam String developerName) {
+    public GameResponse getByDeveloperName(
+            @Parameter(description = "Developer name") @RequestParam String developerName) {
         return GameResponse.fromEntity(gamesService.getGameByDeveloperName(developerName));
     }
-    //////// POST ENDPOINTS
 
-    /**
-     * Endpoint to create a new game.
-     * @param request The request containing the game details.
-     * @return A response entity containing the created game and the location of the new resource.
-     */
+    @Operation(summary = "Create a new game", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Game created",
+            content = @Content(schema = @Schema(implementation = GameResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Developer not found",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @PostMapping
     public ResponseEntity<GameResponse> create(@Valid @RequestBody GameCreateRequest request) {
         var created = gamesService.createGame(request);
@@ -109,22 +126,19 @@ public class GamesController {
         return ResponseEntity.created(location).body(body);
     }
 
-    /**
-     * Endpoint to add multiple genres to a game.
-     * @param id The ID of the game to which to add genres. Id must be positive integer.
-     * @param genreIds A list of genre IDs to add.
-     * @return The updated game with the added genres.
-     */
+    @Operation(summary = "Set genres for a game", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Genres updated"),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Game or genre not found",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @PutMapping("/{id}/genres")
-    public ResponseEntity<Void> addGenres(@PathVariable @Positive @NotNull Integer id, @Valid @RequestBody @NotEmpty List<@NotNull @Positive Integer> genreIds) {
-
+    public ResponseEntity<Void> addGenres(
+            @Parameter(description = "Game ID") @PathVariable @Positive @NotNull Integer id,
+            @Valid @RequestBody @NotEmpty List<@NotNull @Positive Integer> genreIds) {
         genreIds.forEach(genreId -> gamesService.addGenreToGame(id, genreId));
         return ResponseEntity.noContent().build();
     }
-
-    
-     
-     
-
 }
-

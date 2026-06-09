@@ -2,18 +2,22 @@ package Kevin.Peyton.Game.Platform.Demo.dto.errors;
 
 import java.time.OffsetDateTime;
 
-/**
- * A record representing an API error response.
- * @value timestamp The time the error occurred.
- * @value status The HTTP status code of the error.
- * @value error A brief description of the error.
- * @value message A detailed message about the error.
- * @value path The URI path that caused the error.
- */
-public record ApiErrorResponse(OffsetDateTime timestamp, 
-    int status, 
-    String error, 
-    String message, 
-    String path) {
-    
-}
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Standard error response body returned for 4xx and 5xx responses")
+public record ApiErrorResponse(
+    @Schema(description = "Time the error occurred")
+    OffsetDateTime timestamp,
+
+    @Schema(description = "HTTP status code", example = "404")
+    int status,
+
+    @Schema(description = "Short error label", example = "Not Found")
+    String error,
+
+    @Schema(description = "Detailed error message", example = "User not found: 99")
+    String message,
+
+    @Schema(description = "Request path that triggered the error", example = "/API/users/99")
+    String path
+) {}

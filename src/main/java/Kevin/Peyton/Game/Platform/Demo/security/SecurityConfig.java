@@ -59,6 +59,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers(HttpMethod.GET, "/").permitAll()
                 .requestMatchers(HttpMethod.GET, "/API/health").permitAll()
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
                 // Signup + login endpoints (if/when you add them under /API/auth/**)
                 .requestMatchers("/API/auth/**").permitAll()

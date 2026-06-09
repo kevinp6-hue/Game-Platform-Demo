@@ -6,8 +6,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base class for full integration tests that need:
@@ -17,12 +15,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * Keep controller/service/repository tests in their own packages and extend this
  * class only for true end-to-end integration tests.
+ *
+ * Uses the Singleton Container Pattern: one PostgreSQL container is started for
+ * the entire JVM session and shared across all subclasses.  This keeps the
+ * datasource URL stable so Spring's test-context cache works correctly — a
+ * per-class container is stopped after the first test class finishes, leaving
+ * the cached context pointing at a dead port for every subsequent class.
  */
-@Testcontainers(disabledWithoutDocker = true)
 public abstract class IntegrationTestBase {
 
-	@Container
-	protected static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+	// Singleton container — started once, never stopped between test classes.
+	// Ryuk (or JVM shutdown hooks) cleans up the Docker container at process exit.
+	protected static final PostgreSQLContainer<?> postgres =
+			new PostgreSQLContainer<>("postgres:15");
+
+	static {
+		postgres.start();
+	}
 
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {

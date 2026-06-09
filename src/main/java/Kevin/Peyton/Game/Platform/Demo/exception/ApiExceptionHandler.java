@@ -2,6 +2,8 @@ package Kevin.Peyton.Game.Platform.Demo.exception;
 
 import java.time.OffsetDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
     
     /**
      * Handles validation errors and returns a structured API error response.
@@ -142,6 +145,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneralException(Exception ex, HttpServletRequest request)
     {
+        log.error("Unexpected error on {} {}", request.getMethod(), request.getRequestURI(), ex);
         var errorResponse = new ApiErrorResponse(
             OffsetDateTime.now(),
             500,

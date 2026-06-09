@@ -24,8 +24,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.79'
 	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -41,4 +44,27 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+bootRun {
+	doFirst {
+		def envFile = rootProject.file('.env')
+		if (envFile.exists()) {
+			def props = [:]
+			envFile.eachLine { line ->
+				def trimmed = line.trim()
+				if (!trimmed.startsWith('#') && trimmed.contains('=')) {
+					def idx = trimmed.indexOf('=')
+					props[trimmed.substring(0, idx).trim()] = trimmed.substring(idx + 1).trim()
+				}
+			}
+			environment props
+			// host.docker.internal is only valid inside a Docker container; use localhost when running directly on the host
+			def dbHost = (props['POSTGRES_HOST'] == 'host.docker.internal') ? 'localhost' : props['POSTGRES_HOST']
+			environment 'DB_URL', "jdbc:postgresql://${dbHost}:${props['POSTGRES_PORT']}/${props['POSTGRES_DB']}"
+			environment 'DB_USERNAME', props['POSTGRES_USER']
+			environment 'DB_PASSWORD', props['POSTGRES_PASSWORD']
+		}
+	}
+	environment 'SERVER_PORT', '8082'
 }

@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS refresh_tokens CASCADE;
+
 CREATE TABLE refresh_tokens (
     refresh_token_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id INTEGER NOT NULL,
