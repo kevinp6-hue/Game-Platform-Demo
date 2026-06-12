@@ -27,6 +27,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.security.Principal;
+
 import Kevin.Peyton.Game.Platform.Demo.service.UserService;
 import Kevin.Peyton.Game.Platform.Demo.dto.users.UserCreateRequest;
 import Kevin.Peyton.Game.Platform.Demo.dto.users.UserResponse;
@@ -42,6 +44,19 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @Operation(summary = "Get currently logged-in user profile", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/me")
+    public UserResponse getMe(Principal principal) {
+        var user = userService.getUserByUsername(principal.getName());
+        return UserResponse.fromEntity(user);
     }
 
     @Operation(summary = "List all users", security = @SecurityRequirement(name = "bearerAuth"))
