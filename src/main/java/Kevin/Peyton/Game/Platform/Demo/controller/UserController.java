@@ -17,9 +17,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,8 +32,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.security.Principal;
 
 import Kevin.Peyton.Game.Platform.Demo.service.UserService;
+import Kevin.Peyton.Game.Platform.Demo.service.AuthService;
+import Kevin.Peyton.Game.Platform.Demo.dto.auth.AuthResponse;
+import Kevin.Peyton.Game.Platform.Demo.dto.auth.LoginResult;
+
+import java.time.Duration;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+
 import Kevin.Peyton.Game.Platform.Demo.dto.users.UserCreateRequest;
 import Kevin.Peyton.Game.Platform.Demo.dto.users.UserResponse;
+import Kevin.Peyton.Game.Platform.Demo.dto.users.PasswordChangeRequest;
 import Kevin.Peyton.Game.Platform.Demo.dto.errors.ApiErrorResponse;
 
 @Tag(name = "Users", description = "User registration and profile lookup")
@@ -41,9 +53,17 @@ import Kevin.Peyton.Game.Platform.Demo.dto.errors.ApiErrorResponse;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
-    public UserController(UserService userService) {
+    @Value("${security.cookie.secure:false}")
+    private boolean secureCookie;
+
+    @Value("${security.jwt.refreshTtlDays}")
+    private long refreshTtlDays;
+
+    public UserController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @Operation(summary = "Get currently logged-in user profile", security = @SecurityRequirement(name = "bearerAuth"))
@@ -57,6 +77,37 @@ public class UserController {
     public UserResponse getMe(Principal principal) {
         var user = userService.getUserByUsername(principal.getName());
         return UserResponse.fromEntity(user);
+    }
+
+    @Operation(summary = "change password for currently logged-in user", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PatchMapping("/me/password")
+    public ResponseEntity<AuthResponse> changePassword(
+            Principal principal,
+            @RequestBody @Valid PasswordChangeRequest request) {
+        var user = userService.getUserByUsername(principal.getName());
+        userService.changePassword(user.getId(), request.currentPassword(), request.newPassword());
+
+        authService.revokeAllTokensForUser(user.getId());
+        LoginResult loginResult = authService.login(user.getUsername(), request.newPassword());
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", loginResult.refreshToken())
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Strict")
+                .path("/API/auth")
+                .maxAge(Duration.ofDays(refreshTtlDays))
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(loginResult.response());
     }
 
     @Operation(summary = "List all users", security = @SecurityRequirement(name = "bearerAuth"))

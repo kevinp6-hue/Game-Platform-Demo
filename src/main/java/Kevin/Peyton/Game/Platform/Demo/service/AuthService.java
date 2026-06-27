@@ -179,6 +179,22 @@ public class AuthService {
                 newRefreshTokenRaw);
     }
 
+    @Transactional
+    public void revokeAllTokensForUser(Integer userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        var now = OffsetDateTime.now();
+
+        var tokens = refreshTokenRepository.findByUser_Id(user.getId());
+        for (var token : tokens) {
+            if (token.getRevokedAt() == null) {
+                token.setRevokedAt(now);
+            }
+        }
+        refreshTokenRepository.saveAll(tokens);
+    }
+
     private String generateRefreshToken(){
         SecureRandom secureRandom = new SecureRandom();
         byte[] tokenBytes = new byte[32];

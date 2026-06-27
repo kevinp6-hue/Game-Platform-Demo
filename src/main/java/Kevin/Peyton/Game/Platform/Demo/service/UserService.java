@@ -225,6 +225,20 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
+
+    @Transactional
+    public User changePassword(Integer userId, String currentPassword, String newPassword) {
+        User user = requireUser(userId);
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        user.setPasswordHash(encodedNewPassword);
+        return userRepository.save(user);
+    }
+
     private User requireUser(Integer id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
