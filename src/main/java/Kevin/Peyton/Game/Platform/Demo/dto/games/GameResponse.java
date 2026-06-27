@@ -21,6 +21,12 @@ public record GameResponse(
     @Schema(description = "Current price in USD", example = "14.99")
     BigDecimal currentPrice,
 
+    @Schema(description = "Sale price in USD", example = "9.99")
+    BigDecimal salePrice,
+
+    @Schema(description = "Game description", example = "An epic action-adventure game set in a beautifully hand-drawn world.")
+    String description,
+
     @Schema(description = "ID of the developer", example = "7")
     Integer developerId
 ) {
@@ -31,6 +37,8 @@ public record GameResponse(
                 game.getTitle(),
                 game.getReleaseDate(),
                 game.getCurrentPrice(),
+                game.getSalePrice(),
+                game.getDescription(),
                 developer == null ? null : developer.getId());
     }
 }

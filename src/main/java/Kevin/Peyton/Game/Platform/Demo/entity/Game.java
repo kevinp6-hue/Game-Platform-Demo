@@ -30,6 +30,12 @@ public class Game {
     @Column(name = "current_price", precision = 10, scale = 2)
     private BigDecimal currentPrice;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "sale_price", precision = 10, scale = 2)
+    private BigDecimal salePrice;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "developer_id")
     private Developer developer;
@@ -64,6 +70,22 @@ public class Game {
 
     public void setCurrentPrice(BigDecimal currentPrice) {
         this.currentPrice = currentPrice;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public BigDecimal getSalePrice() {
+        return salePrice;
+    }
+
+    public void setSalePrice(BigDecimal salePrice) {
+        this.salePrice = salePrice;
     }
 
     public Developer getDeveloper() {

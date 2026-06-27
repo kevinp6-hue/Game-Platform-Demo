@@ -21,6 +21,9 @@ public class Developer {
 	@Column(name = "country")
 	private String country;
 
+	@Column(name = "bio", columnDefinition = "TEXT")
+	private String bio;
+
 	@Column(name = "owner_user_id")
 	private Integer ownerUserId;
 
@@ -46,6 +49,14 @@ public class Developer {
 
 	public void setCountry(String country) {
 		this.country = country;
+	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public void setBio(String bio) {
+		this.bio = bio;
 	}
 
 	public Integer getOwnerUserId() {
