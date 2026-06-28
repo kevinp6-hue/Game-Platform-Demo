@@ -29,6 +29,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
 
 import Kevin.Peyton.Game.Platform.Demo.dto.games.GameCreateRequest;
 import Kevin.Peyton.Game.Platform.Demo.dto.games.GameResponse;
@@ -48,13 +49,16 @@ public class GamesController {
         this.gamesService = gamesService;
     }
 
-    @Operation(summary = "List all games")
-    @ApiResponse(responseCode = "200", description = "OK",
-        content = @Content(array = @ArraySchema(schema = @Schema(implementation = GameResponse.class))))
+    @Operation(summary = "Search games", description = "Returns a paginated list of games. Filter by title (partial match) and/or genreId.")
+    @ApiResponse(responseCode = "200", description = "OK")
     @GetMapping
-    public List<GameResponse> list() {
-        var games = gamesService.getAllGames();
-        return games.stream().map(GameResponse::fromEntity).toList();
+    public Page<GameResponse> list(
+            @Parameter(description = "Game title") @RequestParam(required = false) String title,
+            @Parameter(description = "Genre ID") @RequestParam(required = false) Integer genreId,
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+        var games = gamesService.searchGames(title, genreId, page, size);
+        return games.map(GameResponse::fromEntity);
     }
 
     @Operation(summary = "Get game by ID")

@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import jakarta.persistence.EntityNotFoundException;
 import Kevin.Peyton.Game.Platform.Demo.dto.games.GameCreateRequest;
@@ -38,6 +40,11 @@ public class GamesService {
     @Transactional(readOnly = true)
     public List<Game> getAllGames() {
         return gameRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Game> searchGames(String title, Integer genreId, int page, int size) {
+        return gameRepository.search(title, genreId, PageRequest.of(page, size));
     }
 
     @Transactional(readOnly = true)
